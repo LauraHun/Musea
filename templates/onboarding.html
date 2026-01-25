@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding - Adaptive Museum Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Top Bar with Logo -->
+    <div class="top-bar">
+        <a href="{{ url_for('museum_gallery') }}" style="text-decoration: none; color: inherit;">
+            <div class="logo-container" style="cursor: pointer;">
+                <svg class="column-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L8 6H16L12 2Z" fill="#8A734D"/>
+                    <rect x="10" y="6" width="4" height="14" fill="#8A734D"/>
+                    <rect x="9" y="20" width="6" height="2" fill="#8A734D"/>
+                </svg>
+                <span class="logo-text">Musea</span>
+            </div>
+        </a>
+        <div class="language-switcher">
+            <button class="language-btn" id="languageBtn" aria-label="Change language">
+                <i class="fas fa-globe"></i>
+                <span id="currentLang">EN</span>
+            </button>
+            <div class="language-dropdown" id="languageDropdown">
+                <button class="lang-option" data-lang="en">English</button>
+                <button class="lang-option" data-lang="fr">Français</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="onboarding-card">
+            <div class="header">
+                <h1 data-en="Welcome to Your Museum Journey" data-fr="Bienvenue dans votre voyage muséal">Welcome to Your Museum Journey</h1>
+                <p class="subtitle" data-en="Tell us about yourself to get personalized recommendations" data-fr="Parlez-nous de vous pour obtenir des recommandations personnalisées">Tell us about yourself to get personalized recommendations</p>
+            </div>
+
+            {% if error %}
+            <div class="error-message">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form action="{{ url_for('submit_onboarding') }}" method="POST" class="onboarding-form" id="onboardingForm">
+                <!-- Language Selection - First Question -->
+                <div class="form-group language-group">
+                    <label for="ui_language" class="required" data-en="Interface Language:" data-fr="Langue de l'interface :">Interface Language:</label>
+                    <select name="ui_language" id="ui_language" required>
+                        <option value="">-- Select / Sélectionner --</option>
+                        <option value="English">English</option>
+                        <option value="French">Français</option>
+                    </select>
+                </div>
+
+                <!-- Questions Section (hidden until language is selected) -->
+                <div id="questionsSection" class="questions-section" style="display: none;">
+                    <!-- Visitor Type -->
+                    <div class="form-group">
+                        <label class="required" data-en="Visitor Type" data-fr="Type de visiteur">Visitor Type</label>
+                        <div class="visitor-type-group">
+                            <button type="button" class="visitor-type-btn" data-value="Student">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span data-en="Student" data-fr="Étudiant">Student</span>
+                            </button>
+                            <button type="button" class="visitor-type-btn" data-value="Tourist">
+                                <i class="fas fa-walking"></i>
+                                <span data-en="Tourist" data-fr="Touriste">Tourist</span>
+                            </button>
+                            <button type="button" class="visitor-type-btn" data-value="Family">
+                                <i class="fas fa-users"></i>
+                                <span data-en="Family" data-fr="Famille">Family</span>
+                            </button>
+                            <button type="button" class="visitor-type-btn" data-value="Curious">
+                                <i class="fas fa-question-circle"></i>
+                                <span data-en="Curious" data-fr="Curieux">Curious</span>
+                            </button>
+                        </div>
+                        <input type="hidden" name="visitor_type" id="visitor_type" required>
+                    </div>
+
+                    <!-- Theme Preferences (Multi-select) -->
+                    <div class="form-group">
+                        <label class="required" data-en="Thematic Interests" data-fr="Intérêts thématiques">Thematic Interests</label>
+                        <div class="theme-tags-group">
+                            <label class="theme-tag">
+                                <input type="checkbox" name="preferred_themes" value="Art">
+                                <span data-en="Art" data-fr="Art">Art</span>
+                            </label>
+                            <label class="theme-tag">
+                                <input type="checkbox" name="preferred_themes" value="History">
+                                <span data-en="History" data-fr="Histoire">History</span>
+                            </label>
+                            <label class="theme-tag">
+                                <input type="checkbox" name="preferred_themes" value="Science">
+                                <span data-en="Science" data-fr="Science">Science</span>
+                            </label>
+                            <label class="theme-tag">
+                                <input type="checkbox" name="preferred_themes" value="Local Heritage">
+                                <span data-en="Local Heritage" data-fr="Patrimoine local">Local Heritage</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Distance Preference (Slider) -->
+                    <div class="form-group">
+                        <label class="required" data-en="Travel Distance" data-fr="Distance de voyage">Travel Distance</label>
+                        <div class="slider-container">
+                            <div class="slider-labels">
+                                <span data-en="Nearby" data-fr="Proche">Nearby</span>
+                                <span data-en="Medium" data-fr="Moyenne">Medium</span>
+                                <span data-en="Far" data-fr="Loin">Far</span>
+                            </div>
+                            <input type="range" id="distance_slider" min="0" max="2" value="1" step="1" class="distance-slider">
+                            <input type="hidden" name="distance_pref" id="distance_pref" value="medium" required>
+                        </div>
+                    </div>
+
+                    <!-- Interest Mode (Segmented Control) -->
+                    <div class="form-group">
+                        <label class="required" data-en="Discovery Style" data-fr="Style de découverte">Discovery Style</label>
+                        <div class="segmented-control">
+                            <input type="radio" name="interest_mode" id="classics" value="classics" required>
+                            <label for="classics" data-en="Classics" data-fr="Classiques">Classics</label>
+                            
+                            <input type="radio" name="interest_mode" id="balanced" value="balanced" required>
+                            <label for="balanced" data-en="Balanced" data-fr="Équilibré">Balanced</label>
+                            
+                            <input type="radio" name="interest_mode" id="hidden_gems" value="hidden_gems" required>
+                            <label for="hidden_gems" data-en="Hidden Gems" data-fr="Pépites cachées">Hidden Gems</label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary" data-en="Start Exploring" data-fr="Commencer l'exploration">Start Exploring</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Language switching functionality
+        const languageSelect = document.getElementById('ui_language');
+        const questionsSection = document.getElementById('questionsSection');
+        
+        // Get saved language preference or default to 'en'
+        let currentLanguage = sessionStorage.getItem('preferred_language') || 'en';
+
+        // Translation data
+        const translations = {
+            en: {
+                selectLanguage: '-- Select --',
+                errorTheme: 'Please select at least one theme preference.',
+                errorVisitor: 'Please select a visitor type.'
+            },
+            fr: {
+                selectLanguage: '-- Sélectionner --',
+                errorTheme: 'Veuillez sélectionner au moins un thème.',
+                errorVisitor: 'Veuillez sélectionner un type de visiteur.'
+            }
+        };
+
+        function updateLanguage(lang) {
+            // lang can be 'French'/'English' or 'fr'/'en'
+            if (lang === 'French' || lang === 'fr') {
+                currentLanguage = 'fr';
+            } else {
+                currentLanguage = 'en';
+            }
+            
+            document.documentElement.lang = currentLanguage;
+            
+            // Update all elements with data-en and data-fr attributes
+            document.querySelectorAll('[data-en][data-fr]').forEach(element => {
+                const text = element.getAttribute(`data-${currentLanguage}`);
+                if (text) {
+                    element.textContent = text;
+                }
+            });
+
+            // Update select placeholder
+            if (languageSelect) {
+                const select = languageSelect.querySelector('option[value=""]');
+                if (select) {
+                    select.textContent = translations[currentLanguage].selectLanguage;
+                }
+            }
+            
+            // Update language switcher display
+            const currentLangSpan = document.getElementById('currentLang');
+            if (currentLangSpan) {
+                currentLangSpan.textContent = currentLanguage.toUpperCase();
+            }
+            
+            // Save to sessionStorage for persistence across pages
+            sessionStorage.setItem('preferred_language', currentLanguage);
+        }
+
+        // Show questions when language is selected
+        languageSelect.addEventListener('change', function() {
+            const selectedLang = this.value;
+            if (selectedLang) {
+                // Update language immediately
+                updateLanguage(selectedLang);
+                // Save preference
+                const langCode = selectedLang === 'French' ? 'fr' : 'en';
+                sessionStorage.setItem('preferred_language', langCode);
+                // Show questions section
+                questionsSection.style.display = 'block';
+                questionsSection.style.animation = 'fadeIn 0.5s ease-in';
+            } else {
+                questionsSection.style.display = 'none';
+            }
+        });
+
+        // Visitor Type Button Selection
+        const visitorTypeButtons = document.querySelectorAll('.visitor-type-btn');
+        const visitorTypeInput = document.getElementById('visitor_type');
+
+        visitorTypeButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                visitorTypeButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                visitorTypeInput.value = this.getAttribute('data-value');
+            });
+        });
+
+        // Distance Slider
+        const distanceSlider = document.getElementById('distance_slider');
+        const distancePref = document.getElementById('distance_pref');
+        const distanceValues = ['nearby', 'medium', 'far_ok'];
+        const distanceLabels = {
+            en: ['Nearby', 'Medium', 'Far'],
+            fr: ['Proche', 'Moyenne', 'Loin']
+        };
+
+        distanceSlider.addEventListener('input', function() {
+            const value = parseInt(this.value);
+            distancePref.value = distanceValues[value];
+        });
+
+        // Form Validation
+        document.getElementById('onboardingForm').addEventListener('submit', function(e) {
+            // Check visitor type
+            if (!visitorTypeInput.value) {
+                e.preventDefault();
+                alert(translations[currentLanguage].errorVisitor);
+                return false;
+            }
+
+            // Check themes
+            const checkboxes = document.querySelectorAll('input[name="preferred_themes"]:checked');
+            if (checkboxes.length === 0) {
+                e.preventDefault();
+                alert(translations[currentLanguage].errorTheme);
+                return false;
+            }
+        });
+
+        // Language switcher functionality (top right button)
+        const languageBtn = document.getElementById('languageBtn');
+        const languageDropdown = document.getElementById('languageDropdown');
+        const currentLangSpan = document.getElementById('currentLang');
+        
+        // Initialize language switcher display and apply saved language on page load
+        if (currentLangSpan) {
+            currentLangSpan.textContent = currentLanguage.toUpperCase();
+        }
+        document.documentElement.lang = currentLanguage;
+        
+        // Apply saved language on page load - update all text immediately
+        if (currentLanguage === 'fr') {
+            // Set the dropdown to French
+            if (languageSelect) {
+                languageSelect.value = 'French';
+                // Show questions if language is already selected
+                if (questionsSection) {
+                    questionsSection.style.display = 'block';
+                }
+            }
+            // Update all text to French
+            updateLanguage('French');
+        } else {
+            // Ensure English is applied
+            updateLanguage('English');
+        }
+
+        if (languageBtn && languageDropdown && currentLangSpan) {
+            languageBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                languageDropdown.classList.toggle('show');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!languageBtn.contains(e.target) && !languageDropdown.contains(e.target)) {
+                    languageDropdown.classList.remove('show');
+                }
+            });
+
+            document.querySelectorAll('.lang-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const lang = this.getAttribute('data-lang');
+                    
+                    // Update the language using the shared function
+                    updateLanguage(lang);
+                    
+                    // Save preference
+                    sessionStorage.setItem('preferred_language', lang);
+                    
+                    // Close dropdown
+                    languageDropdown.classList.remove('show');
+                });
+            });
+        }
+
+        // Clear localStorage on logout (if coming from logout)
+        if (window.location.search.includes('logout=true') || !sessionStorage.getItem('user_id')) {
+            localStorage.removeItem('user_favorites');
+            localStorage.removeItem('user_history');
+        }
+    </script>
+</body>
+</html>

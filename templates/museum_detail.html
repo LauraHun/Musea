@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ museum.name }} - Adaptive Museum Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Top Bar with Logo -->
+    <div class="top-bar">
+        <a href="{{ url_for('museum_gallery') }}" style="text-decoration: none; color: inherit;">
+            <div class="logo-container" style="cursor: pointer;">
+                <svg class="column-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L8 6H16L12 2Z" fill="#8A734D"/>
+                    <rect x="10" y="6" width="4" height="14" fill="#8A734D"/>
+                    <rect x="9" y="20" width="6" height="2" fill="#8A734D"/>
+                </svg>
+                <span class="logo-text">Musea</span>
+            </div>
+        </a>
+        <div class="top-bar-right">
+            <div class="language-switcher">
+                <button class="language-btn" id="languageBtn" aria-label="Change language">
+                    <i class="fas fa-globe"></i>
+                    <span id="currentLang">EN</span>
+                </button>
+                <div class="language-dropdown" id="languageDropdown">
+                    <button class="lang-option" data-lang="en">English</button>
+                    <button class="lang-option" data-lang="fr">Français</button>
+                </div>
+            </div>
+            <div class="profile-switcher">
+                <button class="profile-btn" id="profileBtn" aria-label="Profile menu">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="{{ url_for('favorites') }}" class="profile-option">
+                        <i class="fas fa-heart"></i>
+                        <span data-en="Favorites" data-fr="Favoris">Favorites</span>
+                    </a>
+                    <a href="{{ url_for('history') }}" class="profile-option">
+                        <i class="fas fa-history"></i>
+                        <span data-en="History" data-fr="Historique">History</span>
+                    </a>
+                    <a href="{{ url_for('view_user_profile') }}" class="profile-option">
+                        <i class="fas fa-user"></i>
+                        <span data-en="Profile" data-fr="Profil">Profile</span>
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="profile-option logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span data-en="Logout" data-fr="Déconnexion">Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="museum-detail" data-museum-id="{{ museum.id }}" data-page="detail">
+            <a href="{{ url_for('museum_gallery') }}" class="back-btn" data-action="back">
+                <i class="fas fa-arrow-left"></i> <span data-en="Back to Gallery" data-fr="Retour à la galerie">Back to Gallery</span>
+            </a>
+
+            <div class="museum-detail-header">
+                <div class="museum-detail-image">
+                    <img src="{{ museum.image_url or '/static/placeholder.jpg' }}" alt="{{ museum.name }}">
+                    <button class="favorite-btn" data-action="favorite" data-museum-id="{{ museum.id }}" aria-label="Add to favorites">
+                        <i class="far fa-heart"></i>
+                    </button>
+                </div>
+                <div class="museum-detail-info">
+                    <h1>{{ museum.name }}</h1>
+                    <p class="museum-location">
+                        <i class="fas fa-map-marker-alt"></i> {{ museum.location }}
+                    </p>
+                    <div class="museum-meta">
+                        {% if museum.theme %}
+                        <span class="museum-theme">{{ museum.theme }}</span>
+                        {% endif %}
+                        {% if museum.distance %}
+                        <span class="museum-distance">{{ museum.distance }} km away</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="museum-detail-content">
+                <div class="museum-description-full">
+                    <h2 data-en="About" data-fr="À propos">About</h2>
+                    <p>{{ museum.description }}</p>
+                </div>
+
+                {% if museum.opening_hours %}
+                <div class="museum-hours">
+                    <h2 data-en="Opening Hours" data-fr="Heures d'ouverture">Opening Hours</h2>
+                    <p>{{ museum.opening_hours }}</p>
+                </div>
+                {% endif %}
+
+                {% if museum.website %}
+                <div class="museum-website">
+                    <a href="{{ museum.website }}" target="_blank" rel="noopener noreferrer">
+                        <i class="fas fa-external-link-alt"></i> <span data-en="Visit Official Website" data-fr="Visiter le site officiel">Visit Official Website</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Include tracking script -->
+    <script src="{{ url_for('static', filename='js/tracking.js') }}"></script>
+    <script>
+        // Language switcher functionality
+        const languageBtn = document.getElementById('languageBtn');
+        const languageDropdown = document.getElementById('languageDropdown');
+        const currentLangSpan = document.getElementById('currentLang');
+        let currentLanguage = sessionStorage.getItem('preferred_language') || 'en';
+        
+        // Function to update language
+        function updatePageLanguage(lang) {
+            currentLanguage = lang;
+            document.documentElement.lang = lang;
+            
+            if (currentLangSpan) {
+                currentLangSpan.textContent = lang.toUpperCase();
+            }
+            
+            document.querySelectorAll('[data-en][data-fr]').forEach(element => {
+                const text = element.getAttribute(`data-${lang}`);
+                if (text) element.textContent = text;
+            });
+            
+            sessionStorage.setItem('preferred_language', lang);
+        }
+        
+        // Apply saved language on page load
+        updatePageLanguage(currentLanguage);
+
+        if (languageBtn && languageDropdown) {
+            languageBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                languageDropdown.classList.toggle('show');
+                // Close profile dropdown if open
+                const profileDropdown = document.getElementById('profileDropdown');
+                if (profileDropdown) profileDropdown.classList.remove('show');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!languageBtn.contains(e.target) && !languageDropdown.contains(e.target)) {
+                    languageDropdown.classList.remove('show');
+                }
+            });
+
+            document.querySelectorAll('.lang-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const lang = this.getAttribute('data-lang');
+                    updatePageLanguage(lang);
+                    languageDropdown.classList.remove('show');
+                });
+            });
+        }
+
+        // Profile dropdown functionality
+        const profileBtn = document.getElementById('profileBtn');
+        const profileDropdown = document.getElementById('profileDropdown');
+        
+        if (profileBtn && profileDropdown) {
+            profileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                profileDropdown.classList.toggle('show');
+                // Close language dropdown if open
+                if (languageDropdown) languageDropdown.classList.remove('show');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                    profileDropdown.classList.remove('show');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
