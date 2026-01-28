@@ -9,20 +9,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>(function(){try{if(localStorage.getItem('dark_mode')==='1')document.documentElement.classList.add('dark-mode');}catch(e){}})();</script>
 </head>
-<body>
-    <!-- Top Bar with Logo -->
+<body data-logged-in="{{ 'true' if logged_in else 'false' }}">
     <div class="top-bar">
-        <a href="{{ url_for('museum_gallery') }}" style="text-decoration: none; color: inherit;">
-            <div class="logo-container" style="cursor: pointer;">
-                <svg class="column-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L8 6H16L12 2Z" fill="#8A734D"/>
-                    <rect x="10" y="6" width="4" height="14" fill="#8A734D"/>
-                    <rect x="9" y="20" width="6" height="2" fill="#8A734D"/>
-                </svg>
-                <span class="logo-text">Musea</span>
-            </div>
-        </a>
+        <div class="top-bar-left">
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="{{ url_for('museum_gallery') }}" style="text-decoration: none; color: inherit;">
+                <div class="logo-container" style="cursor: pointer;">
+                    <span class="logo-text">Musea</span>
+                </div>
+            </a>
+            <nav class="main-nav">
+                <a href="{{ url_for('museum_gallery') }}" class="nav-item" data-en="Home" data-fr="Accueil">Home</a>
+                <a href="{{ url_for('favorites') }}" class="nav-item" data-en="Favorites" data-fr="Favoris">Favorites</a>
+                <a href="{{ url_for('history') }}" class="nav-item active" data-en="History" data-fr="Historique">History</a>
+                <a href="{{ url_for('view_user_profile') }}" class="nav-item" data-en="Dashboard" data-fr="Tableau de bord">Dashboard</a>
+            </nav>
+        </div>
         <div class="top-bar-right">
             <div class="language-switcher">
                 <button class="language-btn" id="languageBtn" aria-label="Change language">
@@ -39,22 +45,29 @@
                     <i class="fas fa-user-circle"></i>
                 </button>
                 <div class="profile-dropdown" id="profileDropdown">
-                    <a href="{{ url_for('favorites') }}" class="profile-option">
-                        <i class="fas fa-heart"></i>
-                        <span data-en="Favorites" data-fr="Favoris">Favorites</span>
-                    </a>
-                    <a href="{{ url_for('history') }}" class="profile-option">
-                        <i class="fas fa-history"></i>
-                        <span data-en="History" data-fr="Historique">History</span>
-                    </a>
+                    {% if logged_in %}
                     <a href="{{ url_for('view_user_profile') }}" class="profile-option">
                         <i class="fas fa-user"></i>
-                        <span data-en="Profile" data-fr="Profil">Profile</span>
+                        <span data-en="My profile" data-fr="Mon profil">My profile</span>
+                    </a>
+                    <a href="{{ url_for('profile_edit') }}" class="profile-option">
+                        <i class="fas fa-edit"></i>
+                        <span data-en="Edit interests & distance" data-fr="Modifier intérêts et distance">Edit interests & distance</span>
                     </a>
                     <a href="{{ url_for('logout') }}" class="profile-option logout">
                         <i class="fas fa-sign-out-alt"></i>
                         <span data-en="Logout" data-fr="Déconnexion">Logout</span>
                     </a>
+                    {% else %}
+                    <a href="{{ url_for('login', next=request.path) }}" class="profile-option">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span data-en="Login" data-fr="Connexion">Login</span>
+                    </a>
+                    <a href="{{ url_for('onboarding') }}" class="profile-option">
+                        <i class="fas fa-user-plus"></i>
+                        <span data-en="Sign Up" data-fr="Inscription">Sign Up</span>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -71,7 +84,7 @@
         </div>
     </div>
 
-    <!-- Include tracking script -->
+    <script src="{{ url_for('static', filename='js/dark-mode.js') }}"></script>
     <script src="{{ url_for('static', filename='js/tracking.js') }}"></script>
     <script>
         // Language switcher functionality
@@ -135,6 +148,26 @@
             });
         }
 
+        const THEME_DEFAULT_IMAGES = {
+            "Art": "https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=640",
+            // History: shelves of archival books / documents
+            "History": "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=640",
+            "Science": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=640",
+            "Local Heritage": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=640"
+        };
+        const PLACEHOLDER_IMAGE = "{{ url_for('static', filename='placeholder.svg') }}";
+
+        function imageUrlForMuseum(museum) {
+            if (museum.image_url && museum.image_url.trim() !== "") {
+                return museum.image_url;
+            }
+            const theme = (museum.theme || "").trim();
+            if (THEME_DEFAULT_IMAGES[theme]) {
+                return THEME_DEFAULT_IMAGES[theme];
+            }
+            return PLACEHOLDER_IMAGE;
+        }
+
         // Load history from localStorage and display
         function loadHistory() {
             const history = JSON.parse(localStorage.getItem('user_history') || '[]');
@@ -161,16 +194,21 @@
                 return `
                     <div class="museum-card" data-museum-id="${museum.id}">
                         <div class="museum-card-image">
-                            <img src="${museum.image_url || '/static/placeholder.jpg'}" alt="${museum.name}">
+                            <img src="${imageUrlForMuseum(museum)}"
+                                 alt="${museum.name}"
+                                 onerror="this.onerror=null; this.src='${PLACEHOLDER_IMAGE}';">
                             <button class="favorite-btn ${isFav ? 'favorited' : ''}" data-action="favorite" data-museum-id="${museum.id}" aria-label="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
                                 <i class="${isFav ? 'fas' : 'far'} fa-heart" ${isFav ? 'style="color: #e74c3c;"' : ''}></i>
                             </button>
                         </div>
                         <div class="museum-card-content">
                             <h3>${museum.name}</h3>
-                            <p class="museum-location">
-                                <i class="fas fa-map-marker-alt"></i> ${museum.location}
-                            </p>
+                            <div class="museum-card-theme-location">
+                                ${museum.theme ? `<span class="museum-theme" data-theme="${museum.theme}">${museum.theme}</span>` : ''}
+                                <p class="museum-location">
+                                    <i class="fas fa-map-marker-alt"></i> ${museum.location}
+                                </p>
+                            </div>
                             <p class="museum-description">${museum.description.substring(0, 150)}...</p>
                             <div class="museum-card-actions">
                                 <a href="/museum/${museum.id}" class="view-details-btn" data-action="view-details" data-museum-id="${museum.id}" data-en="View Details" data-fr="Voir les détails">View Details</a>

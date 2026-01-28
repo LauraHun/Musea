@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Musea</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="top-bar">
+        <a href="{{ url_for('museum_gallery') }}" style="text-decoration: none; color: inherit;">
+            <div class="logo-container" style="cursor: pointer;">
+                <i class="fas fa-landmark logo-icon" aria-hidden="true"></i>
+                <span class="logo-text">Musea</span>
+            </div>
+        </a>
+    </div>
+    <div class="container" style="max-width: 420px; margin-top: 60px;">
+        <div class="onboarding-card">
+            <h1 style="color: #8A734D; margin-bottom: 8px;" data-en="Log in with your pseudo" data-fr="Connectez-vous avec votre pseudo">Log in with your pseudo</h1>
+            <p class="subtitle" style="margin-bottom: 24px;" data-en="Enter the pseudo you chose when signing up." data-fr="Entrez le pseudo choisi lors de l'inscription.">Enter the pseudo you chose when signing up.</p>
+            {% if error %}
+            <div class="error-message" style="margin-bottom: 16px;">{{ error }}</div>
+            {% endif %}
+            <form method="POST" action="{{ url_for('login') }}">
+                <input type="hidden" name="next" value="{{ next or url_for('museum_gallery') }}">
+                <div class="form-group">
+                    <label for="pseudo" data-en="Pseudo" data-fr="Pseudo">Pseudo</label>
+                    <input type="text" name="pseudo" id="pseudo" required autocomplete="username"
+                           placeholder="Your pseudo" autofocus
+                           value="{{ request.form.get('pseudo', '') }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="time_available" data-en="How much time do you have today?" data-fr="Combien de temps avez-vous aujourd'hui ?">
+                        How much time do you have today?
+                    </label>
+                    <select id="time_available" name="time_available" required>
+                        <option value="" disabled {% if not request.form.get('time_available') %}selected{% endif %}>
+                            -- Select your available time --
+                        </option>
+                        <option value="10" {% if request.form.get('time_available') == '10' %}selected{% endif %}>
+                            10 min – just a quick look
+                        </option>
+                        <option value="20" {% if request.form.get('time_available') == '20' %}selected{% endif %}>
+                            20 min – a short exploration
+                        </option>
+                        <option value="40" {% if request.form.get('time_available') == '40' %}selected{% endif %}>
+                            40 min – I have some time
+                        </option>
+                        <option value="60" {% if request.form.get('time_available') == '60' %}selected{% endif %}>
+                            60+ min – I can browse a lot
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-actions" style="margin-top: 20px;">
+                    <button type="submit" class="btn-primary" data-en="Log in" data-fr="Se connecter">Log in</button>
+                </div>
+            </form>
+            <p style="text-align: center; margin-top: 20px; color: #666;">
+                <span data-en="No account?" data-fr="Pas de compte ?">No account?</span>
+                <a href="{{ url_for('onboarding') }}" style="color: #8A734D; font-weight: 500;">Sign Up</a>
+            </p>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/dark-mode.js') }}"></script>
+</body>
+</html>

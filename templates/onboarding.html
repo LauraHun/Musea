@@ -15,22 +15,23 @@
     <div class="top-bar">
         <a href="{{ url_for('museum_gallery') }}" style="text-decoration: none; color: inherit;">
             <div class="logo-container" style="cursor: pointer;">
-                <svg class="column-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L8 6H16L12 2Z" fill="#8A734D"/>
-                    <rect x="10" y="6" width="4" height="14" fill="#8A734D"/>
-                    <rect x="9" y="20" width="6" height="2" fill="#8A734D"/>
-                </svg>
+                <i class="fas fa-landmark logo-icon" aria-hidden="true"></i>
                 <span class="logo-text">Musea</span>
             </div>
         </a>
-        <div class="language-switcher">
-            <button class="language-btn" id="languageBtn" aria-label="Change language">
-                <i class="fas fa-globe"></i>
-                <span id="currentLang">EN</span>
+        <div class="top-bar-right">
+            <button class="dark-mode-btn" id="darkModeBtn" aria-label="Switch to dark mode" title="Dark mode">
+                <i class="fas fa-moon"></i>
             </button>
-            <div class="language-dropdown" id="languageDropdown">
-                <button class="lang-option" data-lang="en">English</button>
-                <button class="lang-option" data-lang="fr">Français</button>
+            <div class="language-switcher">
+                <button class="language-btn" id="languageBtn" aria-label="Change language">
+                    <i class="fas fa-globe"></i>
+                    <span id="currentLang">EN</span>
+                </button>
+                <div class="language-dropdown" id="languageDropdown">
+                    <button class="lang-option" data-lang="en">English</button>
+                    <button class="lang-option" data-lang="fr">Français</button>
+                </div>
             </div>
         </div>
     </div>
@@ -40,6 +41,12 @@
             <div class="header">
                 <h1 data-en="Welcome to Your Museum Journey" data-fr="Bienvenue dans votre voyage muséal">Welcome to Your Museum Journey</h1>
                 <p class="subtitle" data-en="Tell us about yourself to get personalized recommendations" data-fr="Parlez-nous de vous pour obtenir des recommandations personnalisées">Tell us about yourself to get personalized recommendations</p>
+                <p class="subtitle" style="margin-top: 8px; font-size: 0.95em;">
+                    <span data-en="Already have an account?" data-fr="Vous avez déjà un compte ?">Already have an account?</span>
+                    <a href="{{ url_for('login') }}" style="color: #8A734D; font-weight: 600;">
+                        <span data-en="Log in" data-fr="Se connecter">Log in</span>
+                    </a>
+                </p>
             </div>
 
             {% if error %}
@@ -49,7 +56,7 @@
             {% endif %}
 
             <form action="{{ url_for('submit_onboarding') }}" method="POST" class="onboarding-form" id="onboardingForm">
-                <!-- Language Selection - First Question -->
+                <!-- Language Selection - First step -->
                 <div class="form-group language-group">
                     <label for="ui_language" class="required" data-en="Interface Language:" data-fr="Langue de l'interface :">Interface Language:</label>
                     <select name="ui_language" id="ui_language" required>
@@ -57,6 +64,18 @@
                         <option value="English">English</option>
                         <option value="French">Français</option>
                     </select>
+                </div>
+
+                <!-- Pick a Pseudo -->
+                <div class="form-group">
+                    <label for="pseudo" class="required" data-en="Pick a Pseudo" data-fr="Choisissez un pseudo">Pick a Pseudo</label>
+                    <input type="text" name="pseudo" id="pseudo" required
+                           placeholder="e.g. museum_lover"
+                           pattern="[a-zA-Z0-9_-]+"
+                           title="Letters, numbers, underscore and hyphen only"
+                           maxlength="32"
+                           autocomplete="username">
+                    <small class="form-hint" data-en="Letters, numbers, underscore or hyphen (used to log in later)" data-fr="Lettres, chiffres, tiret ou underscore (servira à vous connecter)">Letters, numbers, underscore or hyphen (used to log in later)</small>
                 </div>
 
                 <!-- Questions Section (hidden until language is selected) -->
@@ -122,6 +141,19 @@
                         </div>
                     </div>
 
+                    <!-- Home city / hub selection -->
+                    <div class="form-group">
+                        <label class="required" for="hub_city" data-en="Your main city" data-fr="Votre ville principale">Your main city</label>
+                        <select name="hub_city" id="hub_city" required>
+                            <option value="">{{ 'Choose a city / Choisissez une ville' }}</option>
+                            <option value="Lyon">Lyon</option>
+                            <option value="Clermont-Ferrand">Clermont-Ferrand</option>
+                            <option value="Saint-Étienne">Saint-Étienne</option>
+                            <option value="Grenoble">Grenoble</option>
+                        </select>
+                        <small class="form-hint" data-en="Used to compute distances to nearby museums" data-fr="Utilisé pour calculer la distance aux musées proches">Used to compute distances to nearby museums</small>
+                    </div>
+
                     <!-- Interest Mode (Segmented Control) -->
                     <div class="form-group">
                         <label class="required" data-en="Discovery Style" data-fr="Style de découverte">Discovery Style</label>
@@ -145,6 +177,7 @@
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='js/dark-mode.js') }}"></script>
     <script>
         // Language switching functionality
         const languageSelect = document.getElementById('ui_language');

@@ -3,6 +3,9 @@ Adaptation Engine for Adaptive Museum Explorer
 Applies context-aware rules to modify UI behavior based on user profile and environmental context
 """
 
+from flask import session
+
+
 def get_active_settings(user_profile=None, context=None):
     """
     Get active adaptation settings based on user profile and context
@@ -46,10 +49,9 @@ def get_active_settings(user_profile=None, context=None):
         settings['adaptation_reasons'].append(f'you have {time_available} minutes')
     
     # Rule 3: Mobile Context Rule
-    # If device is mobile, use list layout and limit results
+    # If device is mobile, use list layout only (same number of museums as desktop)
     if context.get('device') == 'mobile':
         settings['layout'] = 'list'
-        settings['max_results'] = min(settings['max_results'], 5)  # Don't override time constraint if more restrictive
         if 'mobile device' not in [r for r in settings['adaptation_reasons']]:
             settings['adaptation_reasons'].append('mobile device')
     
@@ -102,10 +104,11 @@ def detect_context(request):
     Returns:
         dict: Detected context (device, connection quality, etc.)
     """
+    # Start with defaults and optionally override time with session value
     context = {
         'device': 'desktop',
         'connection_quality': 'good',
-        'time_available': 60  # Default to 60 minutes
+        'time_available': session.get('time_available_minutes', 60)  # Default to 60 minutes
     }
     
     # Detect device from user agent

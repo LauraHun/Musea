@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-en="Edit interests & distance" data-fr="Modifier intérêts et distance">Edit interests & distance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>(function(){try{if(localStorage.getItem('dark_mode')==='1')document.documentElement.classList.add('dark-mode');}catch(e){}})();</script>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="{{ url_for('museum_gallery') }}" style="text-decoration: none; color: inherit;">
+                <div class="logo-container" style="cursor: pointer;">
+                    <span class="logo-text">Musea</span>
+                </div>
+            </a>
+            <nav class="main-nav">
+                <a href="{{ url_for('museum_gallery') }}" class="nav-item" data-en="Home" data-fr="Accueil">Home</a>
+                <a href="{{ url_for('favorites') }}" class="nav-item" data-en="Favorites" data-fr="Favoris">Favorites</a>
+                <a href="{{ url_for('history') }}" class="nav-item" data-en="History" data-fr="Historique">History</a>
+                <a href="{{ url_for('view_user_profile') }}" class="nav-item" data-en="Dashboard" data-fr="Tableau de bord">Dashboard</a>
+            </nav>
+        </div>
+        <div class="top-bar-right">
+            <div class="language-switcher">
+                <button class="language-btn" id="languageBtn" aria-label="Change language">
+                    <i class="fas fa-globe"></i>
+                    <span id="currentLang">EN</span>
+                </button>
+                <div class="language-dropdown" id="languageDropdown">
+                    <button class="lang-option" data-lang="en">English</button>
+                    <button class="lang-option" data-lang="fr">Français</button>
+                </div>
+            </div>
+            <div class="profile-switcher">
+                <button class="profile-btn" id="profileBtn" aria-label="Profile menu">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="{{ url_for('view_user_profile') }}" class="profile-option">
+                        <i class="fas fa-user"></i>
+                        <span data-en="My profile" data-fr="Mon profil">My profile</span>
+                    </a>
+                    <a href="{{ url_for('profile_edit') }}" class="profile-option">
+                        <i class="fas fa-edit"></i>
+                        <span data-en="Edit interests & distance" data-fr="Modifier intérêts et distance">Edit interests & distance</span>
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="profile-option logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span data-en="Logout" data-fr="Déconnexion">Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="max-width: 560px; margin-top: 40px;">
+        <div class="onboarding-card">
+            <h1 style="color: #8A734D; margin-bottom: 8px;" data-en="Edit interests & distance" data-fr="Modifier intérêts et distance">Edit interests & distance</h1>
+            <p class="subtitle" style="margin-bottom: 24px;" data-en="Change your thematic interests and travel distance." data-fr="Modifiez vos intérêts thématiques et la distance de voyage.">Change your thematic interests and travel distance.</p>
+
+            <form action="{{ url_for('profile_edit') }}" method="POST" class="onboarding-form">
+                <div class="form-group">
+                    <label class="required" data-en="Thematic Interests" data-fr="Intérêts thématiques">Thematic Interests</label>
+                    <div class="theme-tags-group">
+                        <label class="theme-tag">
+                            <input type="checkbox" name="preferred_themes" value="Art" {% if 'Art' in current_themes %}checked{% endif %}>
+                            <span data-en="Art" data-fr="Art">Art</span>
+                        </label>
+                        <label class="theme-tag">
+                            <input type="checkbox" name="preferred_themes" value="History" {% if 'History' in current_themes %}checked{% endif %}>
+                            <span data-en="History" data-fr="Histoire">History</span>
+                        </label>
+                        <label class="theme-tag">
+                            <input type="checkbox" name="preferred_themes" value="Science" {% if 'Science' in current_themes %}checked{% endif %}>
+                            <span data-en="Science" data-fr="Science">Science</span>
+                        </label>
+                        <label class="theme-tag">
+                            <input type="checkbox" name="preferred_themes" value="Local Heritage" {% if 'Local Heritage' in current_themes %}checked{% endif %}>
+                            <span data-en="Local Heritage" data-fr="Patrimoine local">Local Heritage</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="required" data-en="Travel Distance" data-fr="Distance de voyage">Travel Distance</label>
+                    <div class="slider-container">
+                        <div class="slider-labels">
+                            <span data-en="Nearby" data-fr="Proche">Nearby</span>
+                            <span data-en="Medium" data-fr="Moyenne">Medium</span>
+                            <span data-en="Far" data-fr="Loin">Far</span>
+                        </div>
+                        {% set dist = (profile and profile.distance_pref) or 'medium' %}
+                        {% set slider_val = 0 if dist in ('nearby',) else (2 if dist in ('far_ok', 'far',) else 1) %}
+                        <input type="range" id="distance_slider" min="0" max="2" value="{{ slider_val }}" step="1" class="distance-slider">
+                        <input type="hidden" name="distance_pref" id="distance_pref" value="{{ dist if dist in ('nearby','medium','far_ok','far') else 'medium' }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="required" data-en="Discovery Style" data-fr="Style de découverte">Discovery Style</label>
+                    <div class="segmented-control">
+                        {% set mode = (profile and profile.interest_mode) or 'balanced' %}
+                        <input type="radio" name="interest_mode" id="edit_classics" value="classics" {% if mode == 'classics' %}checked{% endif %}>
+                        <label for="edit_classics" data-en="Classics" data-fr="Classiques">Classics</label>
+
+                        <input type="radio" name="interest_mode" id="edit_balanced" value="balanced" {% if mode == 'balanced' or not mode %}checked{% endif %}>
+                        <label for="edit_balanced" data-en="Balanced" data-fr="Équilibré">Balanced</label>
+
+                        <input type="radio" name="interest_mode" id="edit_hidden_gems" value="hidden_gems" {% if mode == 'hidden_gems' %}checked{% endif %}>
+                        <label for="edit_hidden_gems" data-en="Hidden Gems" data-fr="Pépites cachées">Hidden Gems</label>
+                    </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 24px; display: flex; justify-content: center; gap: 12px;">
+                    <button type="submit" class="btn-primary" data-en="Save" data-fr="Enregistrer">Save</button>
+                    <a href="{{ url_for('view_user_profile') }}" class="btn-secondary" data-en="Cancel" data-fr="Annuler">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const distanceSlider = document.getElementById('distance_slider');
+        const distancePref = document.getElementById('distance_pref');
+        const distanceValues = ['nearby', 'medium', 'far_ok'];
+        distanceSlider.addEventListener('input', function() {
+            distancePref.value = distanceValues[parseInt(this.value)];
+        });
+        document.querySelectorAll('.lang-option').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const lang = this.getAttribute('data-lang');
+                document.documentElement.lang = lang;
+                document.getElementById('currentLang').textContent = lang.toUpperCase();
+                document.querySelectorAll('[data-en][data-fr]').forEach(el => {
+                    const t = el.getAttribute('data-' + lang);
+                    if (t) el.textContent = t;
+                });
+            });
+        });
+        const profileBtn = document.getElementById('profileBtn');
+        const profileDropdown = document.getElementById('profileDropdown');
+        if (profileBtn && profileDropdown) {
+            profileBtn.addEventListener('click', () => profileDropdown.classList.toggle('show'));
+            document.addEventListener('click', e => {
+                if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target))
+                    profileDropdown.classList.remove('show');
+            });
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/dark-mode.js') }}"></script>
+</body>
+</html>

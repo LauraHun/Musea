@@ -5,6 +5,7 @@
 
 // Configuration
 const TRACKING_ENDPOINT = '/track_interaction';
+const FEEDBACK_ENDPOINT = '/feedback';
 
 /**
  * Save or remove favorite museum
@@ -83,7 +84,12 @@ async function sendTrackingData(data) {
 
         // Handle errors gracefully - don't break the UI
         if (!response.ok) {
-            console.warn('Tracking data not sent (backend may be in development):', response.status);
+            if (response.status === 401) {
+                // Logged-out users: tracking skipped until they log in
+                console.debug('Tracking skipped (login required)');
+            } else {
+                console.warn('Tracking data not sent (backend may be in development):', response.status);
+            }
             return false;
         }
 
@@ -102,6 +108,9 @@ function initializeMuseumCardTracking() {
     // Track "View Details" button clicks
     document.querySelectorAll('.view-details-btn, [data-action="view-details"]').forEach(button => {
         button.addEventListener('click', function(e) {
+            // Do not also trigger the card-level click handler
+            e.stopPropagation();
+
             const museumCard = this.closest('.museum-card, [data-museum-id]');
             if (!museumCard) return;
 
@@ -128,6 +137,17 @@ function initializeMuseumCardTracking() {
         button.addEventListener('click', function(e) {
             e.preventDefault(); // Prevent default link behavior if it's an <a> tag
             e.stopPropagation(); // Prevent event bubbling
+
+            // On the dedicated favorites page, let page-specific JS handle removal logic
+            if (document.body.getAttribute('data-page') === 'favorites') {
+                return;
+            }
+            // If not logged in, redirect to sign-in with current page as next
+            if (document.body.getAttribute('data-logged-in') !== 'true') {
+                const next = encodeURIComponent(window.location.pathname + window.location.search);
+                window.location.href = '/login?next=' + next;
+                return;
+            }
             
             const museumCard = this.closest('.museum-card, [data-museum-id]');
             if (!museumCard) return;
@@ -167,6 +187,30 @@ function initializeMuseumCardTracking() {
                 
                 sendTrackingData(trackingData);
             }
+        });
+    });
+
+    // Make entire museum cards clickable (except on specific controls)
+    document.querySelectorAll('.museum-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Ignore clicks on favorite buttons or explicit links/buttons
+            if (e.target.closest('.favorite-btn')) return;
+            if (e.target.closest('.view-details-btn')) return;
+
+            const museumId = this.getAttribute('data-museum-id');
+            const detailsLink = this.querySelector('.view-details-btn');
+            if (!museumId || !detailsLink || !detailsLink.href) return;
+
+            // Save to history and track as a click, same as "View Details"
+            saveToHistory(museumId);
+            const trackingData = {
+                museum_id: museumId,
+                interaction_type: 'click',
+                timestamp: new Date().toISOString()
+            };
+            sendTrackingData(trackingData);
+
+            window.location.href = detailsLink.href;
         });
     });
 }
@@ -265,6 +309,27 @@ class ReadingTimer {
 let readingTimer = null;
 
 /**
+ * Track "Visit Official Website" clicks on museum detail page (counts toward engagement)
+ */
+function initializeWebsiteVisitTracking() {
+    const detailEl = document.querySelector('.museum-detail, [data-page="detail"]');
+    if (!detailEl) return;
+    const museumId = detailEl.getAttribute('data-museum-id');
+    document.querySelectorAll('.museum-website a').forEach(link => {
+        link.addEventListener('click', function() {
+            if (museumId) {
+                sendTrackingData({
+                    museum_id: museumId,
+                    interaction_type: 'website_visit',
+                    duration_sec: 0,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        });
+    });
+}
+
+/**
  * Initialize reading timer on museum detail page
  */
 function initializeReadingTimer() {
@@ -274,6 +339,7 @@ function initializeReadingTimer() {
     if (isDetailPage) {
         readingTimer = new ReadingTimer();
         readingTimer.start();
+        initializeWebsiteVisitTracking();
         
         // Also track "Back" button clicks
         document.querySelectorAll('.back-btn, [data-action="back"]').forEach(button => {
@@ -287,6 +353,72 @@ function initializeReadingTimer() {
 }
 
 /**
+ * Explicit thumbs up / down feedback on museum detail page.
+ * One vote per museum per user, enforced server-side.
+ */
+function initializeFeedbackButtons() {
+    const feedbackContainers = document.querySelectorAll('.feedback-buttons[data-museum-id]');
+    if (!feedbackContainers.length) return;
+
+    feedbackContainers.forEach(container => {
+        const museumId = container.getAttribute('data-museum-id');
+        const buttons = container.querySelectorAll('.thumb-btn');
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', async function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Require login for voting
+                if (document.body.getAttribute('data-logged-in') !== 'true') {
+                    const next = encodeURIComponent(window.location.pathname + window.location.search);
+                    window.location.href = '/login?next=' + next;
+                    return;
+                }
+
+                const direction = this.getAttribute('data-feedback');
+                if (!museumId || !direction) return;
+
+                // Optimistic UI: highlight chosen thumb
+                buttons.forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+
+                try {
+                    const res = await fetch(FEEDBACK_ENDPOINT, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            museum_id: museumId,
+                            direction: direction,
+                        }),
+                    });
+
+                    if (!res.ok) {
+                        if (res.status === 401) {
+                            const next = encodeURIComponent(window.location.pathname + window.location.search);
+                            window.location.href = '/login?next=' + next;
+                        }
+                        return;
+                    }
+
+                    const payload = await res.json();
+                    if (payload.status === 'already_voted') {
+                        // Revert selection; user has already voted.
+                        buttons.forEach(b => b.classList.remove('selected'));
+                    }
+                } catch (err) {
+                    console.warn('Feedback error:', err.message);
+                    // Revert optimistic UI on error
+                    buttons.forEach(b => b.classList.remove('selected'));
+                }
+            });
+        });
+    });
+}
+
+/**
  * Initialize all tracking when DOM is ready
  */
 function initializeTracking() {
@@ -295,11 +427,13 @@ function initializeTracking() {
         document.addEventListener('DOMContentLoaded', function() {
             initializeMuseumCardTracking();
             initializeReadingTimer();
+            initializeFeedbackButtons();
         });
     } else {
         // DOM is already loaded
         initializeMuseumCardTracking();
         initializeReadingTimer();
+        initializeFeedbackButtons();
     }
 }
 

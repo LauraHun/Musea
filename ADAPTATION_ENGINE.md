@@ -22,8 +22,7 @@ The Adaptation Engine (`adaptation.py`) applies context-aware rules to modify th
 - **Condition**: `device == 'mobile'`
 - **Actions**:
   - Sets `layout = 'list'`
-  - Sets `max_results = 5` (or keeps lower value if time constraint is more restrictive)
-- **Purpose**: Optimizes layout for mobile devices
+- **Purpose**: Optimizes layout for mobile devices (same number of museums as desktop)
 
 ## Usage
 

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#e5e7eb"/>
+  <!-- Image frame / photo outline -->
+  <rect x="80" y="50" width="240" height="180" rx="4" fill="#d1d5db" stroke="#9ca3af" stroke-width="2"/>
+  <!-- Broken image / no signal icon: mountain + sun with slash -->
+  <path d="M140 180 L200 120 L260 180 L260 210 L140 210 Z" fill="#9ca3af" opacity="0.7"/>
+  <circle cx="240" cy="90" r="28" fill="#fbbf24" opacity="0.8"/>
+  <!-- Slash for "unavailable" -->
+  <line x1="100" y1="220" x2="300" y2="80" stroke="#6b7280" stroke-width="12" stroke-linecap="round"/>
+  <text x="200" y="260" text-anchor="middle" fill="#6b7280" font-family="system-ui,sans-serif" font-size="14" font-weight="500">Image unavailable</text>
+</svg>

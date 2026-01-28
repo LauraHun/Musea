@@ -28,10 +28,13 @@ MUSEUM_THEMES = {
 
 # Scoring weights as defined in project report
 SCORING_WEIGHTS = {
-    'click': 1,          # Click on museum card
-    'reading': 2,        # Detail page opened (initial)
+    'click': 1,           # Click on museum card
+    'reading': 2,         # Detail page opened (initial)
     'favorite': 3,        # Favorite button clicked
-    'reading_time': 1    # Per 30 seconds of reading (capped)
+    'reading_time': 1,    # Per 30 seconds of reading (capped)
+    # Explicit feedback – used by /feedback route
+    'thumbs_up': 3,
+    'thumbs_down': 1,
 }
 
 # Reading time cap (in seconds) to avoid outliers
@@ -84,7 +87,7 @@ def calculate_interaction_points(interaction_type, duration_sec=None):
     Returns:
         int: Points earned from this interaction
     """
-    if interaction_type == 'click':
+    if interaction_type in ('click', 'view-details'):
         return SCORING_WEIGHTS['click']
     
     elif interaction_type == 'reading':
@@ -98,6 +101,17 @@ def calculate_interaction_points(interaction_type, duration_sec=None):
     
     elif interaction_type == 'favorite':
         return SCORING_WEIGHTS['favorite']
+    
+    elif interaction_type == 'thumbs_up':
+        # Treat an explicit thumbs up similarly to a "strong positive" signal
+        return SCORING_WEIGHTS['thumbs_up']
+    
+    elif interaction_type == 'thumbs_down':
+        # Still counts toward engagement, but with lower weight
+        return SCORING_WEIGHTS['thumbs_down']
+    
+    elif interaction_type == 'website_visit':
+        return SCORING_WEIGHTS['website_visit']
     
     else:
         return 0
@@ -179,15 +193,16 @@ def update_engagement_score(user_id, points):
     return mock_db['session_engagement'][user_id]
 
 
-def process_interaction(user_id, museum_id, interaction_type, duration_sec=None):
+def process_interaction(user_id, museum_id, interaction_type, duration_sec=None, theme=None):
     """
     Main function to process an interaction and update all relevant scores
     
     Args:
         user_id (str): User identifier
         museum_id (str): Museum identifier
-        interaction_type (str): Type of interaction ('click', 'reading', 'favorite')
+        interaction_type (str): Type of interaction ('click', 'view-details', 'reading', 'favorite')
         duration_sec (int, optional): Reading duration for 'reading' type
+        theme (str, optional): Museum theme from DB; if provided, used instead of get_museum_theme(museum_id)
         
     Returns:
         dict: Summary of all updates made
@@ -201,8 +216,11 @@ def process_interaction(user_id, museum_id, interaction_type, duration_sec=None)
             'message': 'No points calculated for this interaction'
         }
     
-    # Get museum theme
-    theme = get_museum_theme(museum_id)
+    # Use theme from DB if provided, else fall back to in-memory lookup
+    if theme is None or (isinstance(theme, str) and not theme.strip()):
+        theme = get_museum_theme(museum_id)
+    elif isinstance(theme, str):
+        theme = theme.strip()
     
     result = {
         'user_id': user_id,

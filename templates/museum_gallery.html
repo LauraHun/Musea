@@ -10,20 +10,29 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-    <!-- Top Bar with Logo -->
+<body data-logged-in="{{ 'true' if logged_in else 'false' }}">
+    <!-- Top Bar: Logo + Nav | Language | Profile -->
     <div class="top-bar">
-        <a href="{{ url_for('museum_gallery') }}" style="text-decoration: none; color: inherit;">
-            <div class="logo-container" style="cursor: pointer;">
-                <svg class="column-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L8 6H16L12 2Z" fill="#8A734D"/>
-                    <rect x="10" y="6" width="4" height="14" fill="#8A734D"/>
-                    <rect x="9" y="20" width="6" height="2" fill="#8A734D"/>
-                </svg>
-                <span class="logo-text">Musea</span>
-            </div>
-        </a>
+        <div class="top-bar-left">
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="{{ url_for('museum_gallery') }}" style="text-decoration: none; color: inherit;">
+                <div class="logo-container" style="cursor: pointer;">
+                    <span class="logo-text">Musea</span>
+                </div>
+            </a>
+            <nav class="main-nav">
+            <a href="{{ url_for('museum_gallery') }}" class="nav-item active" data-en="Home" data-fr="Accueil">Home</a>
+            <a href="{{ url_for('favorites') }}" class="nav-item" data-en="Favorites" data-fr="Favoris">Favorites</a>
+            <a href="{{ url_for('history') }}" class="nav-item" data-en="History" data-fr="Historique">History</a>
+            <a href="{{ url_for('view_user_profile') }}" class="nav-item" data-en="Dashboard" data-fr="Tableau de bord">Dashboard</a>
+            </nav>
+        </div>
         <div class="top-bar-right">
+            <button class="dark-mode-btn" id="darkModeBtn" aria-label="Switch to dark mode" title="Dark mode">
+                <i class="fas fa-moon"></i>
+            </button>
             <div class="language-switcher">
                 <button class="language-btn" id="languageBtn" aria-label="Change language">
                     <i class="fas fa-globe"></i>
@@ -39,22 +48,29 @@
                     <i class="fas fa-user-circle"></i>
                 </button>
                 <div class="profile-dropdown" id="profileDropdown">
-                    <a href="{{ url_for('favorites') }}" class="profile-option">
-                        <i class="fas fa-heart"></i>
-                        <span data-en="Favorites" data-fr="Favoris">Favorites</span>
-                    </a>
-                    <a href="{{ url_for('history') }}" class="profile-option">
-                        <i class="fas fa-history"></i>
-                        <span data-en="History" data-fr="Historique">History</span>
-                    </a>
+                    {% if logged_in %}
                     <a href="{{ url_for('view_user_profile') }}" class="profile-option">
                         <i class="fas fa-user"></i>
-                        <span data-en="Profile" data-fr="Profil">Profile</span>
+                        <span data-en="My profile" data-fr="Mon profil">My profile</span>
+                    </a>
+                    <a href="{{ url_for('profile_edit') }}" class="profile-option">
+                        <i class="fas fa-edit"></i>
+                        <span data-en="Edit interests & distance" data-fr="Modifier intérêts et distance">Edit interests & distance</span>
                     </a>
                     <a href="{{ url_for('logout') }}" class="profile-option logout">
                         <i class="fas fa-sign-out-alt"></i>
                         <span data-en="Logout" data-fr="Déconnexion">Logout</span>
                     </a>
+                    {% else %}
+                    <a href="{{ url_for('login', next=request.path or url_for('museum_gallery')) }}" class="profile-option">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span data-en="Login" data-fr="Connexion">Login</span>
+                    </a>
+                    <a href="{{ url_for('onboarding') }}" class="profile-option">
+                        <i class="fas fa-user-plus"></i>
+                        <span data-en="Sign Up" data-fr="Inscription">Sign Up</span>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -66,12 +82,68 @@
             <p data-en="Discover museums in France" data-fr="Découvrez les musées en France">Discover museums in France</p>
         </div>
 
+        <div class="discovery-tabs">
+            <a href="{{ url_for('museum_gallery') }}"
+               class="discovery-tab {% if (current_tab or 'for_you') != 'hidden' %}active{% endif %}"
+               data-en="For You"
+               data-fr="Pour vous">
+                For You
+            </a>
+            <a href="{{ url_for('museum_gallery', tab='hidden') }}"
+               class="discovery-tab {% if current_tab == 'hidden' %}active{% endif %}"
+               data-en="Hidden Gems"
+               data-fr="Pépites cachées">
+                Hidden Gems
+            </a>
+        </div>
+
+        {% if current_tab == 'hidden' %}
+        <div class="hidden-gems-explainer">
+            <i class="fas fa-sparkles" aria-hidden="true"></i>
+            <div class="hidden-gems-text">
+                <strong data-en="Why are these Hidden Gems?" data-fr="Pourquoi ces pépites ?">
+                    Why are these Hidden Gems?
+                </strong>
+                <p data-en="They match your interests, have very high approval, but are visited by only a small share of users."
+                   data-fr="Ils correspondent à vos intérêts, ont une excellente appréciation, mais sont encore très peu visités.">
+                    They match your interests, have very high approval, but are visited by only a small share of users.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if available_themes %}
+        <div class="theme-filter-bar">
+            <span class="theme-filter-label" data-en="Filter by theme:" data-fr="Filtrer par thème :">Filter by theme:</span>
+            <div class="theme-filter-buttons">
+                <a href="{{ url_for('museum_gallery') }}" class="theme-filter-btn {% if not current_theme %}active{% endif %}" data-en="All" data-fr="Tous">All</a>
+                {% for theme in available_themes %}
+                <a href="{{ url_for('museum_gallery', theme=theme) }}" class="theme-filter-btn {% if current_theme == theme %}active{% endif %}">{{ theme }}</a>
+                {% endfor %}
+            </div>
+            <div class="theme-filter-select-wrapper">
+                <select id="themeFilterSelect" class="theme-filter-select" aria-label="Filter by theme">
+                    <option value="{{ url_for('museum_gallery') }}" {% if not current_theme %}selected{% endif %} data-en="All" data-fr="Tous">
+                        All
+                    </option>
+                    {% for theme in available_themes %}
+                    <option value="{{ url_for('museum_gallery', theme=theme) }}" {% if current_theme == theme %}selected{% endif %}>
+                        {{ theme }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="museum-gallery {% if settings.layout == 'list' %}museum-gallery-list{% endif %}">
             {% for museum in museums %}
             <div class="museum-card" data-museum-id="{{ museum.id }}">
                 {% if settings.show_images %}
                 <div class="museum-card-image">
-                    <img src="{{ museum.image_url or '/static/placeholder.jpg' }}" alt="{{ museum.name }}">
+                    <img src="{{ museum | museum_image_url }}"
+                         alt="{{ museum.name }}"
+                         onerror="this.onerror=null; this.src='{{ url_for('static', filename='placeholder.svg') }}';">
                     <button class="favorite-btn" data-action="favorite" data-museum-id="{{ museum.id }}" aria-label="Add to favorites">
                         <i class="far fa-heart"></i>
                     </button>
@@ -86,9 +158,17 @@
                 {% endif %}
                 <div class="museum-card-content">
                     <h3>{{ museum.name }}</h3>
-                    <p class="museum-location">
-                        <i class="fas fa-map-marker-alt"></i> {{ museum.location }}
-                    </p>
+                    <div class="museum-card-theme-location">
+                        {% if museum.theme %}
+                        <span class="museum-theme" data-theme="{{ museum.theme }}">{{ museum.theme }}</span>
+                        {% endif %}
+                        <p class="museum-location">
+                            <i class="fas fa-map-marker-alt"></i> {{ museum.location }}
+                        </p>
+                        {% if museum.distance_km is defined and museum.distance_km is not none %}
+                        <span class="museum-distance">{{ museum.distance_km }} km away</span>
+                        {% endif %}
+                    </div>
                     <p class="museum-description">
                         {% if settings.description_length == 'short' %}
                             {{ museum.description[:80] }}...
@@ -96,6 +176,20 @@
                             {{ museum.description[:150] }}...
                         {% endif %}
                     </p>
+
+                    {% if current_tab == 'hidden' %}
+                    <div class="hidden-gem-meta-line">
+                        <span class="hidden-gem-badge" data-en="Hidden Gem" data-fr="Pépite cachée">Hidden Gem</span>
+                        <span class="hidden-gem-metrics">
+                            {% set votes = (museum.thumbs_up or 0) + (museum.thumbs_down or 0) %}
+                            {% if museum.approval_rating is not none and votes > 0 %}
+                                {{ museum.approval_rating|round(0) }}% approval · {{ votes }} votes
+                            {% else %}
+                                New – waiting for first votes
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
                     <div class="museum-card-actions">
                         <a href="{{ url_for('museum_detail', museum_id=museum.id) }}" 
                            class="view-details-btn" 
@@ -111,6 +205,17 @@
             {% endfor %}
         </div>
 
+        {% if has_more and see_more_url %}
+        <div class="see-more-wrapper">
+            <a href="{{ see_more_url }}"
+               class="btn-secondary see-more-btn"
+               data-en="See more museums"
+               data-fr="Voir plus de musées">
+                See more museums
+            </a>
+        </div>
+        {% endif %}
+
         <!-- Adaptation Log for Transparency -->
         {% if adaptation_log %}
         <div class="adaptation-log" style="margin-top: 40px; padding: 20px; background: #F5E6D3; border-left: 4px solid #8A734D; border-radius: 4px; color: #5a4a3a; font-size: 0.9em;">
@@ -120,7 +225,7 @@
         {% endif %}
     </div>
 
-    <!-- Include tracking script -->
+    <script src="{{ url_for('static', filename='js/dark-mode.js') }}"></script>
     <script src="{{ url_for('static', filename='js/tracking.js') }}"></script>
     <script>
         // Language switcher functionality
@@ -195,6 +300,17 @@
             document.addEventListener('click', function(e) {
                 if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
                     profileDropdown.classList.remove('show');
+                }
+            });
+        }
+
+        // Theme filter dropdown (mobile): navigate on change
+        const themeSelect = document.getElementById('themeFilterSelect');
+        if (themeSelect) {
+            themeSelect.addEventListener('change', function() {
+                const url = this.value;
+                if (url) {
+                    window.location.href = url;
                 }
             });
         }
