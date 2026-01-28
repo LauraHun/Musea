@@ -220,6 +220,7 @@ def track_interaction():
             if mid is not None:
                 db_manager.log_interaction(user_id, mid, interaction_type, float(duration_sec))
         except (TypeError, ValueError):
+            # Ignore malformed museum IDs in tracking payloads
             pass
         museum_theme = None
         try:
@@ -229,14 +230,22 @@ def track_interaction():
                 if mus and mus.get('theme'):
                     museum_theme = mus.get('theme')
         except (TypeError, ValueError):
+            # If theme lookup fails we still record the interaction
             pass
+        # Best-effort scoring: errors here must not break tracking
         try:
-            process_interaction(user_id=user_id, museum_id=museum_id, interaction_type=interaction_type, duration_sec=duration_sec, theme=museum_theme)
-        except Exception as e:
-            print(f"Scoring (non-fatal): {e}")
+            process_interaction(
+                user_id=user_id,
+                museum_id=museum_id,
+                interaction_type=interaction_type,
+                duration_sec=duration_sec,
+                theme=museum_theme,
+            )
+        except Exception:
+            # Intentionally swallowed; scoring is supplementary
+            pass
         return jsonify({'status': 'success', 'message': 'Interaction tracked'}), 200
     except Exception as e:
-        print(f"ERROR tracking interaction: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/user_profile')
@@ -490,8 +499,7 @@ def feedback():
         feedback_result = db_manager.submit_feedback(user_id=user_id, museum_id=mid, direction=direction)
     except ValueError as e:
         return jsonify({'status': 'error', 'message': str(e)}), 400
-    except Exception as e:
-        print(f"ERROR in /feedback DB logic: {e}")
+    except Exception:
         return jsonify({'status': 'error', 'message': 'Could not record feedback'}), 500
 
     # If the user has already voted, do not change scores; just report back.
@@ -511,6 +519,7 @@ def feedback():
             museum_theme = museum.get('theme')
     except Exception:
         pass
+    # Best-effort scoring: errors here must not affect the response
     try:
         process_interaction(
             user_id=user_id,
@@ -519,9 +528,9 @@ def feedback():
             duration_sec=0,
             theme=museum_theme,
         )
-    except Exception as e:
+    except Exception:
         # Non-fatal; DB already updated
-        print(f"Scoring (non-fatal) in /feedback: {e}")
+        pass
 
     return jsonify({
         'status': 'ok',
